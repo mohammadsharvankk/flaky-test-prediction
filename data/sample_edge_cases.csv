@@ -1,0 +1,4 @@
+label,assertion-roulette,conditional-test-logic,eager-test,fire-and-forget,indirect-testing,mystery-guest,resource-optimism,test-run-war,testLength,numAsserts,numCoveredLines,ExecutionTime,projectSourceLinesCovered,projectSourceClassesCovered,num_third_party_libs,hIndexModificationsPerCoveredLine_window100
+extreme_high_risk,1,1,1,1,0,1,0,0,250,1,800,45.0,50000,900,30,25
+minimal_clean_test,0,0,0,0,0,0,0,0,5,3,4,0.002,500,20,1,0
+partial_data_test,0,,1,,0,0,0,0,30,,15,2.1,,60,2,

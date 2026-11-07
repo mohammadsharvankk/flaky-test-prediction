@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FlakeGuard - Test Risk Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F1117; --sidebar: #14161E; --surface: #1A1D27; --surface-2: #21242F;
+    --border: #2A2E3A; --text: #E9EAF0; --muted: #8B8FA3; --dim: #565B6B;
+    --red: #FF5F57; --amber: #FFBD2E; --green: #2ECC71; --accent: #5B8DEF; --purple: #A78BFA;
+    --mono: 'JetBrains Mono', monospace; --sans: 'Inter', -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); display: flex; min-height: 100vh; font-size: 15px; line-height: 1.5; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar { width: 250px; background: var(--sidebar); border-right: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; padding: 22px 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 22px; }
+  .brand-mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--purple)); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 700; font-size: 15px; color: #fff; flex-shrink: 0; }
+  .brand-text { font-family: var(--mono); font-weight: 700; font-size: 16px; letter-spacing: -0.01em; text-transform: uppercase; }
+  .brand-sub { font-size: 10.5px; color: var(--dim); letter-spacing: 0.07em; text-transform: uppercase; }
+
+  .search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; margin-bottom: 20px; }
+  .search svg { flex-shrink: 0; opacity: 0.5; }
+  .search input { background: none; border: none; outline: none; color: var(--text); font-size: 13.5px; font-family: var(--sans); width: 100%; }
+  .search input::placeholder { color: var(--dim); }
+
+  .navgroup-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; margin-top: 6px; margin-bottom: 6px; font-family: var(--mono); font-weight: 700; }
+  .navitem { display: flex; align-items: center; gap: 11px; padding: 11px 11px; border-radius: 8px; color: var(--muted); font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; cursor: pointer; margin-bottom: 3px; transition: background 0.12s; }
+  .navitem svg { flex-shrink: 0; opacity: 0.75; }
+  .navitem:hover { background: var(--surface); color: var(--text); }
+  .navitem.active { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .navitem.active svg { opacity: 1; color: var(--accent); }
+  .navitem .badge-count { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--dim); background: var(--surface); padding: 1px 6px; border-radius: 8px; }
+
+  .sidebar-footer { margin-top: auto; padding: 12px 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--dim); font-family: var(--mono); line-height: 1.6; }
+
+  /* ---------- Main ---------- */
+  .main { flex: 1; min-width: 0; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 20px 30px; border-bottom: 1px solid var(--border); background: var(--sidebar); }
+  .topbar h1 { font-family: var(--mono); font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+  .topbar .sub { font-size: 13.5px; color: var(--muted); margin-top: 3px; }
+  .profile { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px 6px 6px; }
+  .profile-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--purple)); }
+  .profile span { font-size: 13px; font-family: var(--mono); }
+
+  .content { padding: 28px 30px 70px; }
+
+  .fixed-footer {
+    position: fixed; bottom: 0; left: 250px; right: 0;
+    background: var(--sidebar); border-top: 1px solid var(--border);
+    text-align: center; padding: 12px 20px;
+    font-family: var(--mono); font-size: 12px; color: var(--dim);
+    z-index: 100;
+  }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .grid2 { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 16px; margin-bottom: 22px; align-items: start; }
+  .grid2-even { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; align-items: start; }
+
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .stat .v { font-family: var(--mono); font-size: 30px; font-weight: 700; }
+  .stat .l { font-size: 13px; color: var(--muted); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 500; }
+  .stat .l2 { font-size: 11.5px; color: var(--dim); margin-top: 4px; font-family: var(--mono); }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; }
+  .panel-title { font-family: var(--mono); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between; }
+  .panel-note { font-size: 13px; color: var(--dim); margin-bottom: 16px; line-height: 1.5; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 9px 10px; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--border); cursor: pointer; position: sticky; top: 0; background: var(--surface); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { padding: 9px 10px; border-bottom: 1px solid #23262F; }
+  .risk-cell { display: flex; align-items: center; gap: 7px; }
+  .risk-track { width: 48px; height: 7px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+  .risk-fill { height: 100%; }
+  .risk-val { font-family: var(--mono); font-size: 12.5px; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-family: var(--mono); padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.02em; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  tr.row:hover { background: var(--surface-2); cursor: pointer; }
+  .scroll-wrap { max-height: 380px; overflow-y: auto; }
+
+  /* donut */
+  .donut-wrap { display: flex; align-items: center; gap: 20px; }
+  .donut-center-label { font-family: var(--mono); }
+  .donut-center-label .big { font-size: 22px; font-weight: 700; }
+  .donut-center-label .small { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+  .legend-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend-item { white-space: nowrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+
+  input[type=text] { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; margin-bottom: 12px; font-family: var(--mono); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; font-size: 12px; }
+  .bar-label { width: 220px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 12.5px; }
+  .bar-track { flex: 1; background: var(--bg); border-radius: 4px; height: 11px; overflow: hidden; border: 1px solid var(--border); }
+  .bar-fill { height: 100%; border-radius: 3px; }
+  .cat-tag { display: inline-block; font-size: 10.5px; font-family: var(--mono); padding: 2px 7px; border-radius: 9px; margin-left: 8px; white-space: nowrap; text-transform: uppercase; }
+
+  .feat-line { display: flex; align-items: center; gap: 10px; font-size: 13px; margin-bottom: 7px; font-family: var(--mono); }
+  .feat-name { width: 260px; flex-shrink: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  .feat-bar-wrap { flex: 1; height: 11px; background: var(--surface-2); border-radius: 4px; position: relative; border: 1px solid var(--border); }
+  .feat-mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--dim); }
+  .feat-bar { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+  .feat-bar.pos { background: var(--red); left: 50%; }
+  .feat-bar.neg { background: var(--accent); right: 50%; }
+  .detail { display: none; background: var(--bg); }
+  .detail.open { display: table-row; }
+
+  .hist { display: flex; align-items: flex-end; gap: 2px; height: 140px; margin-top: 8px; }
+  .hist-bar-wrap { flex: 1; display: flex; flex-direction: column-reverse; height: 100%; }
+  .hist-seg-flaky { background: var(--red); border-radius: 2px 2px 0 0; }
+  .hist-seg-clean { background: var(--border); }
+  .hist-labels { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--dim); margin-top: 6px; font-family: var(--mono); }
+
+  /* ---------- Carousel ---------- */
+  .carousel { position: relative; border-radius: 14px; overflow: hidden; margin-bottom: 22px; height: 148px; border: 1px solid var(--border); }
+  .carousel-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); }
+  .carousel-slide { min-width: 100%; height: 100%; display: flex; align-items: center; padding: 0 34px; gap: 28px; }
+  .carousel-slide .cs-icon { width: 64px; height: 64px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border); }
+  .carousel-slide .cs-icon svg { width: 32px; height: 32px; }
+  .carousel-slide .cs-text .cs-title { font-family: var(--mono); font-size: 22px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+  .carousel-slide .cs-text .cs-sub { font-size: 14px; color: var(--muted); max-width: 560px; line-height: 1.5; }
+  .carousel-dots { position: absolute; bottom: 14px; right: 20px; display: flex; gap: 7px; }
+  .carousel-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: background 0.2s, width 0.2s; }
+  .carousel-dot.active { background: #fff; width: 20px; border-radius: 4px; }
+  .carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; }
+  .carousel-arrow.prev { left: 14px; } .carousel-arrow.next { right: 14px; }
+  .carousel-arrow:hover { background: rgba(0,0,0,0.4); }
+
+  /* ---------- Glossary ---------- */
+  .glossary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .glossary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .glossary-card .g-term { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.02em; }
+  .glossary-card .g-def { font-size: 14px; color: var(--text); line-height: 1.55; margin-bottom: 8px; }
+  .glossary-card .g-example { font-size: 12.5px; color: var(--dim); font-family: var(--mono); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">FG</div>
+    <div>
+      <div class="brand-text">FlakeGuard</div>
+      <div class="brand-sub">Test Risk Intelligence</div>
+    </div>
+  </div>
+
+  <div class="search" style="position:relative;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" id="globalSearch" placeholder="Search projects...">
+    <div id="searchDropdown" style="display:none; position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:6px; z-index:200; max-height:280px; overflow-y:auto;"></div>
+  </div>
+
+  <div class="navgroup-label">Menu</div>
+  <div class="navitem active" data-view="overview">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+    Overview
+  </div>
+  <div class="navitem" data-view="risk">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    Risk Analysis
+  </div>
+  <div class="navitem" data-view="intelligence">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0112 4.5v15a2.5 2.5 0 01-4.96.5H7A2.5 2.5 0 014.5 17.5v-.5H4a2 2 0 01-2-2v-1a2 2 0 01-1-1.73V9.73A2 2 0 012 8V7a2 2 0 012-2h.5v-.5A2.5 2.5 0 017 2h2.5z"/><path d="M14.5 2A2.5 2.5 0 0012 4.5v15a2.5 2.5 0 004.96.5H17a2.5 2.5 0 002.5-2.5v-.5h.5a2 2 0 002-2v-1a2 2 0 001-1.73V9.73A2 2 0 0022 8V7a2 2 0 00-2-2h-.5v-.5A2.5 2.5 0 0017 2h-2.5z"/></svg>
+    Test Intelligence
+  </div>
+  <div class="navitem" data-view="config">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Config
+  </div>
+  <div class="navitem" data-view="reports">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+    Reports
+  </div>
+  <div class="navitem" data-view="predict">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2v6L3 20a1 1 0 001 2h16a1 1 0 001-2l-6-12V2M9 2h6M8 15h8"/></svg>
+    Predict
+  </div>
+  <div class="navitem" data-view="glossary">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+    Glossary
+  </div>
+  <div class="navitem" data-view="relatedwork">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    Related Work
+  </div>
+
+  <div class="sidebar-footer">Flaky Test Prediction<br>MSc Final Project</div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h1 id="pageTitle">Overview</h1>
+      <div class="sub" id="pageSub">Cross-project flaky test risk, at a glance</div>
+    </div>
+    <div class="profile">
+      <div class="profile-avatar"></div>
+      <span>MK</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="view active" id="view-overview">
+      <div class="carousel" id="carousel">
+        <div class="carousel-track" id="carouselTrack"></div>
+        <div class="carousel-arrow prev" onclick="moveCarousel(-1)">&#8249;</div>
+        <div class="carousel-arrow next" onclick="moveCarousel(1)">&#8250;</div>
+        <div class="carousel-dots" id="carouselDots"></div>
+      </div>
+      <div class="grid4" id="stats"></div>
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-title">ROC curve <span id="rocAucLabel"></span></div>
+          <div class="panel-note">How well the model ranks flaky tests above clean ones, across every threshold</div>
+          <svg id="rocSvg" width="100%" height="180" viewBox="0 0 400 180"></svg>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Confusion matrix</div>
+          <div class="panel-note" id="cmNoteOverview"></div>
+          <div class="donut-wrap">
+            <svg id="donutSvg" width="120" height="120" viewBox="0 0 120 120"></svg>
+            <div>
+              <div class="legend-row" style="flex-direction:column; gap:6px; margin-top:0;" id="donutLegend"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid2-even">
+        <div class="panel">
+          <div class="panel-title">Riskiest projects</div>
+          <div class="panel-note">Top 6 by average predicted risk</div>
+          <table><thead><tr><th>Project</th><th>Avg risk</th><th>Flagged</th></tr></thead><tbody id="proj-tbody-overview"></tbody></table>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Highest-risk tests</div>
+          <div class="panel-note">Top 6 individual tests right now</div>
+          <table><thead><tr><th>Project</th><th>Risk</th><th>Actual</th></tr></thead><tbody id="test-tbody-overview"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RISK ANALYSIS -->
+    <div class="view" id="view-risk">
+      <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title">Risk score distribution</div>
+        <div class="panel-note">Red = actually flaky, gray = not flaky. Overlap near 0% is why precision is limited.</div>
+        <div class="hist" id="hist"></div>
+        <div class="hist-labels"><span>0%</span><span>50%</span><span>100% risk</span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">All projects by risk</div>
+        <input type="text" id="riskSearch" placeholder="Filter by project...">
+        <div class="scroll-wrap">
+          <table><thead><tr><th>Project</th><th>Tests</th><th>Flaky</th><th>Avg risk</th><th>Flagged</th></tr></thead><tbody id="proj-tbody-full"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEST INTELLIGENCE -->
+    <div class="view" id="view-intelligence">
+      <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title">What drives flaky predictions</div>
+        <div class="panel-note">SHAP feature importance, grouped by category</div>
+        <div id="importance"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Individual tests</div>
+        <input type="text" id="testSearch" placeholder="Filter by project...">
+        <div class="scroll-wrap">
+          <table><thead><tr><th onclick="sortBy('project')">Project</th><th onclick="sortBy('risk_score')">Risk</th><th onclick="sortBy('flaky')">Actual</th></tr></thead><tbody id="tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="view" id="view-config">
+      <div class="panel">
+        <div class="panel-title">Decision threshold</div>
+        <div class="panel-note">Drag to see how the confusion matrix and metrics change at a different cutoff. ROC-AUC never changes here since it's threshold-independent.</div>
+        <div style="display:flex; align-items:center; gap:16px; margin: 18px 0 24px;">
+          <input type="range" id="thresholdSlider" min="0" max="29" value="0" step="1">
+          <div style="font-family: var(--mono); font-size: 20px; font-weight: 700; min-width: 60px;" id="thresholdValue"></div>
+        </div>
+        <div class="grid4" id="configStats"></div>
+        <div class="grid2-even" style="margin-top:14px;">
+          <div class="panel" style="background:var(--surface-2);">
+            <div class="panel-title">Confusion matrix at this threshold</div>
+            <div id="configCm"></div>
+          </div>
+          <div class="panel" style="background:var(--surface-2);">
+            <div class="panel-title">Precision / recall tradeoff</div>
+            <div class="panel-note" style="margin-bottom:14px;">This is the lever &mdash; lower threshold catches more flaky tests but raises false alarms</div>
+            <div id="configBars"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px; background:var(--surface-2);">
+          <div class="panel-title">Metrics across every threshold</div>
+          <div class="panel-note">The full tradeoff curve. The marker shows where the slider above is currently set.</div>
+          <svg id="sweepChart" width="100%" height="180" viewBox="0 0 760 180"></svg>
+          <div class="legend-row">
+            <div class="legend-item"><div class="dot" style="background:var(--accent)"></div>Precision</div>
+            <div class="legend-item"><div class="dot" style="background:var(--purple)"></div>Recall</div>
+            <div class="legend-item"><div class="dot" style="background:var(--green)"></div>F1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="view" id="view-reports">
+      <div class="grid2" style="margin-bottom:16px;">
+        <div class="panel">
+          <div class="panel-title">Model comparison report</div>
+          <div class="panel-note">ROC-AUC, PR-AUC, F1 and compute cost across every configuration tested</div>
+          <table><thead><tr><th>Configuration</th><th>ROC-AUC</th><th>PR-AUC</th><th>F1</th><th>Cost</th></tr></thead><tbody id="comparisonTbody"></tbody></table>
+        </div>
+        <div class="panel">
+          <div class="panel-title">What drives predictions, by category</div>
+          <div class="panel-note">Share of total SHAP importance across the top features</div>
+          <div style="display:flex; align-items:center; gap:20px;">
+            <svg id="reportDonut" width="130" height="130" viewBox="0 0 120 120"></svg>
+            <div class="legend-row" style="flex-direction:column; gap:8px; margin-top:0;" id="reportDonutLegend"></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Progress across iterations</div>
+        <div class="panel-note">ROC-AUC by configuration, in the order they were tested</div>
+        <svg id="progressChart" width="100%" height="140" viewBox="0 0 760 140"></svg>
+      </div>
+    </div>
+
+    <!-- PREDICT -->
+    <div class="view" id="view-predict">
+      <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title">Score a new test</div>
+        <div class="panel-note">Runs the trained Random Forest (all 300 trees) directly in-browser. Fields below are the most influential inputs; less critical technical features default to dataset medians. Project-relative features (percentile/z-score vs. peer tests) default to neutral since a new test has no project history yet.</div>
+        <div style="display:flex; gap:10px; margin-bottom:18px;">
+          <button class="ex-btn" id="loadFlaky" style="background:rgba(255,95,87,0.12); border:1px solid rgba(255,95,87,0.3); color:var(--red); padding:8px 14px; border-radius:8px; font-family:var(--mono); font-size:12px; cursor:pointer;">Load known-flaky example</button>
+          <button class="ex-btn" id="loadClean" style="background:rgba(46,204,113,0.12); border:1px solid rgba(46,204,113,0.3); color:var(--green); padding:8px 14px; border-radius:8px; font-family:var(--mono); font-size:12px; cursor:pointer;">Load known-clean example</button>
+          <button class="ex-btn" id="resetForm" style="background:var(--surface-2); border:1px solid var(--border); color:var(--muted); padding:8px 14px; border-radius:8px; font-family:var(--mono); font-size:12px; cursor:pointer;">Reset to medians</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-title">Test properties</div>
+          <div id="numericInputs" style="margin-bottom:16px;"></div>
+          <div class="panel-title" style="margin-top:18px;">Test smells present</div>
+          <div id="smellInputs" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:10px;"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Predicted risk</div>
+          <div id="predictResult" style="text-align:center; padding: 20px 0;"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px;">
+        <div class="panel-title">Batch scoring &mdash; upload a CSV</div>
+        <div class="panel-note">Score many tests at once. Columns must match the template exactly (an optional first "label" column is passed through for display; missing cells default to dataset medians).</div>
+        <div style="display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+          <button id="downloadTemplate" style="background:var(--surface-2); border:1px solid var(--border); color:var(--muted); padding:8px 14px; border-radius:8px; font-family:var(--mono); font-size:12px; cursor:pointer;">Download CSV template</button>
+          <label for="csvUpload" style="background:rgba(91,141,239,0.12); border:1px solid rgba(91,141,239,0.3); color:var(--accent); padding:8px 14px; border-radius:8px; font-family:var(--mono); font-size:12px; cursor:pointer;">Upload CSV</label>
+          <input type="file" id="csvUpload" accept=".csv" style="display:none;">
+          <span id="csvStatus" style="font-family:var(--mono); font-size:11.5px; color:var(--dim);"></span>
+        </div>
+        <div id="batchResultsWrap" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div class="panel-note" style="margin-bottom:0;" id="batchSummary"></div>
+            <button id="downloadResults" style="background:var(--surface-2); border:1px solid var(--border); color:var(--muted); padding:6px 12px; border-radius:8px; font-family:var(--mono); font-size:11px; cursor:pointer;">Download results CSV</button>
+          </div>
+          <div class="scroll-wrap">
+            <table><thead><tr><th>Label</th><th>Risk</th><th>Status</th></tr></thead><tbody id="batchTbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GLOSSARY -->
+    <div class="view" id="view-glossary">
+      <div class="panel-title" style="margin-bottom:16px; font-size:14px;">Terms used in this dashboard</div>
+      <div class="glossary-grid" id="glossaryGrid"></div>
+    </div>
+
+    <!-- RELATED WORK -->
+    <div class="view" id="view-relatedwork">
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">How this compares to published work</div>
+        <div class="panel-note">Results reported on the same FlakeFlagger dataset - a direct comparison needs care, explained below</div>
+        <div class="scroll-wrap" style="max-height:none; overflow-x:auto;">
+        <table>
+          <thead><tr><th>Method</th><th>Year</th><th>Precision</th><th>Recall</th><th>F1</th><th>Approach</th><th>Explainable?</th></tr></thead>
+          <tbody id="relatedWorkTbody"></tbody>
+        </table>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title">Beyond accuracy: what else differs</div>
+        <div class="panel-note">Performance isn't the only axis that matters - these are capabilities, not accuracy claims</div>
+        <table>
+          <thead><tr><th>Method</th><th>ROC-AUC / PR-AUC reported?</th><th>Live interactive tool?</th><th>Compute cost reported?</th><th>Negative results documented?</th></tr></thead>
+          <tbody id="relatedWorkCapabilitiesTbody"></tbody>
+        </table>
+      </div>
+
+      <div class="panel" style="background:var(--surface-2);">
+        <div class="panel-title">Why the gap, and what this project adds</div>
+        <div id="relatedWorkNotes" style="font-size:14px; line-height:1.6; color:var(--text);"></div>
+        <div style="font-size:12px; color:var(--dim); font-style:italic; margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
+          * FlakeFlagger's original per-project evaluation is reported as substantially lower than later methods; exact figure varies by source. "This project" reflects the tuned Random Forest with engineered features, after threshold tuning. Precision/Recall/F1 for Flakify, HgtFlaky and DeepFlaky are as reported in their respective papers; not independently reproduced here.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="fixed-footer">
+    Mohammad Kamil Karaya &middot; MSc Data Science (FT) &middot; University of Birmingham Dubai &middot; Supervisor: Dr. Anis Zarrad
+  </div>
+</div>
+
+<script>
+const PRED_UI = __PREDICTOR_UI_PLACEHOLDER__;
+const DATA = __DATA_PLACEHOLDER__;
+const PRED_MODEL = __PREDICTOR_TREES_PLACEHOLDER__;
+const threshold = DATA.threshold;
+
+function riskColor(score) {
+  if (score >= threshold) return 'var(--red)';
+  if (score >= threshold * 0.6) return 'var(--amber)';
+  return 'var(--green)';
+}
+
+/* ---------- Navigation ---------- */
+const titles = {
+  overview: ["Overview", "Cross-project flaky test risk, at a glance"],
+  risk: ["Risk analysis", "Distribution and per-project risk breakdown"],
+  intelligence: ["Test intelligence", "What the model has learned, test by test"],
+  config: ["Config", "Tune the decision threshold and see the tradeoff live"],
+  reports: ["Reports", "Model comparison across every configuration tested"],
+  predict: ["Predict", "Score a new test with the trained model, live"],
+  glossary: ["Glossary", "What every metric and term on this dashboard actually means"],
+  relatedwork: ["Related Work", "How this project compares to published flaky-test prediction research"],
+};
+document.querySelectorAll('.navitem').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.navitem').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    const key = item.dataset.view;
+    document.getElementById('view-' + key).classList.add('active');
+    document.getElementById('pageTitle').textContent = titles[key][0];
+    document.getElementById('pageSub').textContent = titles[key][1];
+  });
+});
+const searchInput = document.getElementById('globalSearch');
+const searchDropdown = document.getElementById('searchDropdown');
+
+function renderSearchDropdown(query) {
+  if (!query.trim()) { searchDropdown.style.display = 'none'; return; }
+  const matches = DATA.project_summary.filter(p => p.project.toLowerCase().includes(query.toLowerCase())).slice(0, 8);
+  if (matches.length === 0) {
+    searchDropdown.innerHTML = `<div style="padding:12px; font-size:13px; color:var(--dim); font-family:var(--mono);">No projects found</div>`;
+  } else {
+    searchDropdown.innerHTML = matches.map(p => {
+      const pct = Math.round(p.avg_risk * 100);
+      return `<div class="search-result" data-project="${p.project}" style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 10px; border-radius:6px; cursor:pointer;">
+        <span style="font-size:13.5px;">${p.project}</span>
+        <div class="risk-cell"><div class="risk-track"><div class="risk-fill" style="width:${pct}%;background:${riskColor(p.avg_risk)}"></div></div><span class="risk-val">${pct}%</span></div>
+      </div>`;
+    }).join('');
+  }
+  searchDropdown.style.display = 'block';
+
+  searchDropdown.querySelectorAll('.search-result').forEach(el => {
+    el.addEventListener('mouseenter', () => el.style.background = 'var(--surface)');
+    el.addEventListener('mouseleave', () => el.style.background = 'transparent');
+    // mousedown (not click) with preventDefault: stops the input from blurring
+    // before the click completes, which was hiding the dropdown mid-click and
+    // silently swallowing the click on slower, real (non-automated) clicks.
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const proj = el.dataset.project;
+      document.querySelector('.navitem[data-view="risk"]').click();
+      document.getElementById('riskSearch').value = proj;
+      riskFilterText = proj;
+      renderProjectsFull();
+      searchDropdown.style.display = 'none';
+      searchInput.value = '';
+    });
+  });
+}
+
+searchInput.addEventListener('input', (e) => renderSearchDropdown(e.target.value));
+searchInput.addEventListener('focus', (e) => { if (e.target.value) renderSearchDropdown(e.target.value); });
+searchInput.addEventListener('blur', () => setTimeout(() => { searchDropdown.style.display = 'none'; }, 150));
+
+/* ---------- Carousel ---------- */
+const carouselSlides = [
+  {
+    bg: 'linear-gradient(120deg, rgba(91,141,239,0.14), rgba(91,141,239,0.04)), var(--surface)', iconBg: 'rgba(91,141,239,0.16)', iconColor: '#5B8DEF',
+    icon: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+    title: (DATA.roc_auc*100).toFixed(1) + '% ROC-AUC',
+    sub: 'Cross-project, honest out-of-fold evaluation - each test scored by a model that never saw its own project.',
+  },
+  {
+    bg: 'linear-gradient(120deg, rgba(46,204,113,0.14), rgba(46,204,113,0.04)), var(--surface)', iconBg: 'rgba(46,204,113,0.16)', iconColor: '#2ECC71',
+    icon: '<path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
+    title: 'Project-relative features',
+    sub: 'Engineering how unusual a test is for its own project - not just absolute values - added a genuine, reproducible improvement.',
+  },
+  {
+    bg: 'linear-gradient(120deg, rgba(255,95,87,0.14), rgba(255,95,87,0.04)), var(--surface)', iconBg: 'rgba(255,95,87,0.16)', iconColor: '#FF5F57',
+    icon: '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',
+    title: 'Execution timing leads',
+    sub: 'SHAP confirms it: how long a test runs is the single strongest signal of flakiness, ahead of code churn and coverage.',
+  },
+  {
+    bg: 'linear-gradient(120deg, rgba(167,139,250,0.14), rgba(167,139,250,0.04)), var(--surface)', iconBg: 'rgba(167,139,250,0.16)', iconColor: '#A78BFA',
+    icon: '<path d="M9 2v6L3 20a1 1 0 001 2h16a1 1 0 001-2l-6-12V2M9 2h6M8 15h8"/>',
+    title: 'Try it yourself',
+    sub: 'The Predict tab runs the trained model live, in-browser - score a single test, or upload a CSV to batch-score many.',
+    cta: 'predict',
+  },
+];
+let carouselIndex = 0;
+document.getElementById('carouselTrack').innerHTML = carouselSlides.map(s => `
+  <div class="carousel-slide" style="background:${s.bg};">
+    <div class="cs-icon" style="background:${s.iconBg};"><svg viewBox="0 0 24 24" fill="none" stroke="${s.iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg></div>
+    <div class="cs-text">
+      <div class="cs-title" style="color:#fff;">${s.title}</div>
+      <div class="cs-sub">${s.sub}</div>
+      ${s.cta ? `<div onclick="document.querySelector('[data-view=predict]').click()" style="display:inline-block; margin-top:10px; background:var(--surface-2); border:1px solid var(--border); color:var(--accent); padding:7px 14px; border-radius:7px; font-family:var(--mono); font-size:12px; cursor:pointer;">Open Predict &rarr;</div>` : ''}
+    </div>
+  </div>
+`).join('');
+document.getElementById('carouselDots').innerHTML = carouselSlides.map((_, i) => `<div class="carousel-dot ${i===0?'active':''}" onclick="goToSlide(${i})"></div>`).join('');
+
+function updateCarousel() {
+  document.getElementById('carouselTrack').style.transform = `translateX(-${carouselIndex * 100}%)`;
+  document.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === carouselIndex));
+}
+function goToSlide(i) { carouselIndex = i; updateCarousel(); resetAutoAdvance(); }
+function moveCarousel(dir) { carouselIndex = (carouselIndex + dir + carouselSlides.length) % carouselSlides.length; updateCarousel(); resetAutoAdvance(); }
+let carouselTimer;
+function resetAutoAdvance() { clearInterval(carouselTimer); carouselTimer = setInterval(() => moveCarousel(1), 5000); }
+resetAutoAdvance();
+
+/* ---------- Reports: category donut + progress chart ---------- */
+(function drawReportDonut() {
+  const catColorsHex = { "Execution timing": "#FF5F57", "Code churn history": "#FFBD2E", "Coverage footprint": "#5B8DEF", "Test structure": "#A78BFA", "Project-relative (new)": "#2ECC71", "Test smells": "#8B8FA3" };
+  const totals = {};
+  DATA.top_importance.forEach(f => { totals[f.category] = (totals[f.category] || 0) + f.mean_abs_shap; });
+  const sum = Object.values(totals).reduce((a, b) => a + b, 0);
+  const r = 50, cx = 60, cy = 60, circ = 2 * Math.PI * r;
+  let offset = 0, arcs = '', legend = '';
+  Object.entries(totals).sort((a,b) => b[1]-a[1]).forEach(([cat, val]) => {
+    const frac = val / sum, len = frac * circ;
+    const color = catColorsHex[cat] || '#5B8DEF';
+    arcs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="14" stroke-dasharray="${len} ${circ-len}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    offset += len;
+    legend += `<div class="legend-item"><div class="dot" style="background:${color}"></div>${cat}: <strong style="color:var(--text)">${(frac*100).toFixed(0)}%</strong></div>`;
+  });
+  document.getElementById('reportDonut').innerHTML = arcs;
+  document.getElementById('reportDonutLegend').innerHTML = legend;
+})();
+
+(function drawProgressChart() {
+  const data = DATA.comparison;
+  const w = 760, h = 140, pad = 44;
+  const maxV = Math.max(...data.map(d => d.roc_auc)), minV = Math.min(...data.map(d => d.roc_auc)) - 0.03;
+  const x = i => pad + i * ((w - pad - 20) / (data.length - 1));
+  const y = v => (h - 28) - ((v - minV) / (maxV - minV)) * (h - 50);
+  let path = `M ${x(0)} ${y(data[0].roc_auc)}`;
+  data.forEach((d, i) => { if (i > 0) path += ` L ${x(i)} ${y(d.roc_auc)}`; });
+  let dots = data.map((d, i) => `<circle cx="${x(i)}" cy="${y(d.roc_auc)}" r="4" fill="#5B8DEF"/>
+    <text x="${x(i)}" y="${y(d.roc_auc)-10}" text-anchor="middle" fill="#E9EAF0" font-size="11" font-family="JetBrains Mono">${d.roc_auc.toFixed(3)}</text>
+    <text x="${x(i)}" y="${h-8}" text-anchor="middle" fill="#8B8FA3" font-size="9.5" font-family="JetBrains Mono">${d.config.split(' ')[0]}</text>`).join('');
+  document.getElementById('progressChart').innerHTML = `
+    <line x1="${pad}" y1="${h-28}" x2="${w-10}" y2="${h-28}" stroke="#2A2E3A" stroke-width="1"/>
+    <path d="${path}" fill="none" stroke="#5B8DEF" stroke-width="2.5"/>
+    ${dots}
+  `;
+})();
+
+/* ---------- Glossary ---------- */
+const glossaryTerms = [
+  { term: 'Precision', def: 'Of the tests flagged as flaky, what fraction actually were flaky. Low precision means false alarms - tests wrongly flagged.', example: `Current model: ${(DATA.precision*100).toFixed(1)}% precision at the chosen threshold.` },
+  { term: 'Recall', def: 'Of the tests that were actually flaky, what fraction the model caught. Low recall means real flaky tests are being missed.', example: `Current model: ${(DATA.recall*100).toFixed(1)}% recall at the chosen threshold.` },
+  { term: 'F1 score', def: 'A single number balancing precision and recall. It punishes models that are extreme in either direction - can\'t score well by just flagging everything or nothing.', example: 'F1 = 2 x (precision x recall) / (precision + recall)' },
+  { term: 'ROC-AUC', def: 'How well the model ranks flaky tests above clean ones, across every possible threshold - not just one cutoff. 50% is random guessing, 100% is perfect separation.', example: `Current model: ${(DATA.roc_auc*100).toFixed(1)}% ROC-AUC.` },
+  { term: 'PR-AUC', def: 'Like ROC-AUC, but focused specifically on the rare positive class (flaky tests). More sensitive than ROC-AUC when the dataset is heavily imbalanced, like this one (3.7% flaky).', example: 'Reported alongside ROC-AUC in the Reports tab, per supervisor feedback.' },
+  { term: 'Threshold', def: 'The cutoff risk score above which a test gets flagged as flaky. Lowering it catches more real flaky tests but raises more false alarms - that tradeoff is explorable live in Config.', example: `Current model: ${(threshold*100).toFixed(0)}% threshold.` },
+  { term: 'Confusion matrix', def: 'A 2x2 breakdown of every prediction: true positive (caught), false negative (missed), false positive (false alarm), true negative (correctly ignored).', example: 'Shown as a donut chart on the Overview and Config tabs.' },
+  { term: 'SHAP', def: 'A method that explains individual predictions by showing which features pushed a test\'s risk score up or down, and by how much.', example: 'Used throughout Test Intelligence and per-test explanations.' },
+  { term: 'Out-of-fold (OOF)', def: 'A prediction made by a model that never saw that test\'s project during training - the honest way to estimate real-world performance.', example: 'Every risk score in this dashboard is out-of-fold.' },
+  { term: 'Cross-project evaluation', def: 'Testing on an entire project the model has never seen, rather than a random sample of individual tests. Prevents the model from just memorizing project-specific patterns.', example: 'Implemented as Leave-One-Group-Out across 23 projects.' },
+  { term: 'Class imbalance', def: 'When one outcome is far more common than the other. Here, only 3.7% of tests are flaky - which is why accuracy alone would be misleading (predicting "never flaky" scores ~96%).', example: '802 flaky vs. 20,859 non-flaky tests.' },
+  { term: 'Ensembling', def: 'Combining predictions from multiple models (Voting or Stacking), hoping they cover each other\'s weaknesses. Tested here but did not beat a single tuned Random Forest.', example: 'See the Reports tab for the full comparison.' },
+];
+document.getElementById('glossaryGrid').innerHTML = glossaryTerms.map(g => `
+  <div class="glossary-card">
+    <div class="g-term">${g.term}</div>
+    <div class="g-def">${g.def}</div>
+    <div class="g-example">${g.example}</div>
+  </div>
+`).join('');
+
+/* ---------- Related Work ---------- */
+const relatedWork = [
+  { method: 'FlakeFlagger', year: '2021', precision: 'lower*', recall: 'lower*', f1: 'lower*', approach: 'Random Forest, static + dynamic features', explainable: 'Partial' },
+  { method: 'Flakify', year: '2022', precision: '72%', recall: '85%', f1: '73%', approach: 'CodeBERT (LLM), source-code only, black-box', explainable: 'No' },
+  { method: 'HgtFlaky', year: '2026', precision: '78%', recall: '89%', f1: '81%', approach: 'Graph neural network, runtime evidence', explainable: 'No' },
+  { method: 'DeepFlaky', year: '2026', precision: '93%', recall: '93%', f1: '93%', approach: 'Hybrid deep representation learning', explainable: 'No' },
+  { method: 'This project', year: '2026', precision: '17%', recall: '36%', f1: '15%', approach: 'Tuned Random Forest, engineered features', explainable: 'Yes (SHAP)', highlight: true },
+];
+document.getElementById('relatedWorkTbody').innerHTML = relatedWork.map(r => `
+  <tr style="${r.highlight ? 'background:rgba(91,141,239,0.08);' : ''}">
+    <td>${r.method}</td>
+    <td class="risk-val">${r.year}</td>
+    <td class="risk-val">${r.precision}</td>
+    <td class="risk-val">${r.recall}</td>
+    <td class="risk-val" style="${r.highlight ? 'font-weight:700; color:var(--accent);' : ''}">${r.f1}</td>
+    <td>${r.approach}</td>
+    <td>${r.explainable}</td>
+  </tr>
+`).join('');
+
+const relatedWorkCapabilities = [
+  { method: 'FlakeFlagger', rocauc: 'Not reported', tool: 'No', cost: 'No', negresults: 'No' },
+  { method: 'Flakify', rocauc: 'Not reported', tool: 'No', cost: 'No', negresults: 'No' },
+  { method: 'HgtFlaky', rocauc: 'Not reported', tool: 'No', cost: 'No', negresults: 'No' },
+  { method: 'DeepFlaky', rocauc: 'Not reported', tool: 'No', cost: 'No', negresults: 'No' },
+  { method: 'This project', rocauc: 'Yes (72.5%)', tool: 'Yes (Predict tab)', cost: 'Yes', negresults: 'Yes', highlight: true },
+];
+document.getElementById('relatedWorkCapabilitiesTbody').innerHTML = relatedWorkCapabilities.map(r => `
+  <tr style="${r.highlight ? 'background:rgba(91,141,239,0.08);' : ''}">
+    <td>${r.method}</td>
+    <td>${r.rocauc}</td>
+    <td>${r.tool}</td>
+    <td>${r.cost}</td>
+    <td>${r.negresults}</td>
+  </tr>
+`).join('');
+
+document.getElementById('relatedWorkNotes').innerHTML = `
+  <p style="margin-bottom:14px;"><strong style="color:var(--text);">Strict evaluation lowers the headline number:</strong> <span style="color:var(--muted);">this project tests on all 23 real projects with zero leakage, using Leave-One-Group-Out. Some published results use less strict cross-project splits, which makes the underlying prediction problem easier than genuine deployment would be.</span></p>
+  <p><strong style="color:var(--text);">High F1 can be misleading:</strong> <span style="color:var(--muted);">IDoFT-style class imbalance (84.6% flaky) can inflate F1 without the model learning anything real - confirmed directly in this project by a near-random ROC-AUC (~50%) on that data before feature improvements, and again after. Precision/recall/F1 alone can't distinguish a model that learned real signal from one exploiting a friendly class balance; ROC-AUC and PR-AUC can.</span></p>
+`;
+
+document.getElementById('stats').innerHTML = `
+  <div class="stat"><div class="v">${DATA.total_tests.toLocaleString()}</div><div class="l">Total tests</div></div>
+  <div class="stat"><div class="v">${DATA.total_flaky.toLocaleString()}</div><div class="l">Actually flaky</div><div class="l2">${(DATA.total_flaky/DATA.total_tests*100).toFixed(1)}%</div></div>
+  <div class="stat"><div class="v">${(DATA.roc_auc*100).toFixed(1)}%</div><div class="l">ROC-AUC</div></div>
+  <div class="stat"><div class="v">${(threshold*100).toFixed(0)}%</div><div class="l">Threshold</div><div class="l2">${(DATA.recall*100).toFixed(0)}% recall</div></div>
+`;
+
+/* ---------- ROC curve (real SVG line from computed points) ---------- */
+document.getElementById('rocAucLabel').innerHTML = `<span style="color:var(--accent); font-family:var(--mono);">${(DATA.roc_auc*100).toFixed(1)}%</span>`;
+(function drawRoc() {
+  const pts = DATA.roc_curve;
+  const w = 400, h = 180, pad = 30;
+  const x = v => pad + v * (w - pad * 1.5);
+  const y = v => (h - pad) - v * (h - pad * 1.5);
+  let path = `M ${x(pts[0].fpr)} ${y(pts[0].tpr)}`;
+  pts.forEach(p => path += ` L ${x(p.fpr)} ${y(p.tpr)}`);
+  const svg = document.getElementById('rocSvg');
+  svg.innerHTML = `
+    <line x1="${x(0)}" y1="${y(0)}" x2="${x(1)}" y2="${y(1)}" stroke="#3A3F4E" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="${pad}" y1="${h-pad}" x2="${w-10}" y2="${h-pad}" stroke="#2A2E3A" stroke-width="1"/>
+    <line x1="${pad}" y1="10" x2="${pad}" y2="${h-pad}" stroke="#2A2E3A" stroke-width="1"/>
+    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+    <text x="${pad}" y="${h-8}" fill="#565B6B" font-size="9" font-family="JetBrains Mono">0</text>
+    <text x="${w-24}" y="${h-8}" fill="#565B6B" font-size="9" font-family="JetBrains Mono">FPR 1</text>
+    <text x="4" y="16" fill="#565B6B" font-size="9" font-family="JetBrains Mono">TPR</text>
+  `;
+})();
+
+/* ---------- Donut confusion matrix ---------- */
+function drawDonut(svgId, cm) {
+  const total = cm.tp + cm.fp + cm.fn + cm.tn;
+  const segs = [
+    { v: cm.tp, color: '#2ECC71', label: 'True positive' },
+    { v: cm.fn, color: '#FF5F57', label: 'Missed' },
+    { v: cm.fp, color: '#FFBD2E', label: 'False alarm' },
+    { v: cm.tn, color: '#3A3F4E', label: 'True negative' },
+  ];
+  const r = 50, cx = 60, cy = 60, circ = 2 * Math.PI * r;
+  let offset = 0;
+  let arcs = '';
+  segs.forEach(s => {
+    const frac = s.v / total;
+    const len = frac * circ;
+    arcs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="14" stroke-dasharray="${len} ${circ-len}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    offset += len;
+  });
+  document.getElementById(svgId).innerHTML = arcs;
+  return segs;
+}
+const segsOverview = drawDonut('donutSvg', DATA.confusion_matrix);
+document.getElementById('donutLegend').innerHTML = segsOverview.map(s => `
+  <div class="legend-item"><div class="dot" style="background:${s.color}"></div>${s.label}: <strong style="color:var(--text)">${s.v}</strong></div>
+`).join('');
+document.getElementById('cmNoteOverview').textContent = `Of ${DATA.total_flaky} real flaky tests, ${DATA.confusion_matrix.tp} caught, ${DATA.confusion_matrix.fn} missed.`;
+
+/* ---------- Overview mini tables ---------- */
+document.getElementById('proj-tbody-overview').innerHTML = DATA.project_summary.slice(0, 6).map(p => {
+  const pct = Math.round(p.avg_risk * 100);
+  return `<tr><td>${p.project}</td>
+    <td><div class="risk-cell"><div class="risk-track"><div class="risk-fill" style="width:${pct}%;background:${riskColor(p.avg_risk)}"></div></div><span class="risk-val">${pct}%</span></div></td>
+    <td class="risk-val">${p.n_flagged}/${p.n_tests}</td></tr>`;
+}).join('');
+
+document.getElementById('test-tbody-overview').innerHTML = DATA.tests.slice(0, 6).map(t => {
+  const pct = Math.round(t.risk_score * 100);
+  return `<tr><td>${t.project}</td>
+    <td><div class="risk-cell"><div class="risk-track"><div class="risk-fill" style="width:${pct}%;background:${riskColor(t.risk_score)}"></div></div><span class="risk-val">${pct}%</span></div></td>
+    <td><span class="badge"><div class="dot" style="background:${t.flaky?'var(--red)':'var(--green)'}"></div>${t.flaky?'flaky':'clean'}</span></td></tr>`;
+}).join('');
+
+/* ---------- Risk Analysis view ---------- */
+const maxCount = Math.max(...DATA.histogram.map(h => h.flaky_count + h.nonflaky_count));
+document.getElementById('hist').innerHTML = DATA.histogram.map(h => {
+  const total = h.flaky_count + h.nonflaky_count;
+  const heightPct = maxCount ? (total / maxCount * 100) : 0;
+  const flakyShare = total ? (h.flaky_count / total * 100) : 0;
+  return `<div class="hist-bar-wrap" title="${(h.bucket_start*100).toFixed(0)}%: ${h.flaky_count} flaky, ${h.nonflaky_count} clean">
+    <div style="height:${heightPct}%; display:flex; flex-direction:column-reverse;">
+      <div class="hist-seg-clean" style="height:${100-flakyShare}%;"></div>
+      <div class="hist-seg-flaky" style="height:${flakyShare}%;"></div>
+    </div>
+  </div>`;
+}).join('');
+
+let riskFilterText = '';
+function renderProjectsFull() {
+  const rows = DATA.project_summary.filter(p => p.project.toLowerCase().includes(riskFilterText.toLowerCase()));
+  document.getElementById('proj-tbody-full').innerHTML = rows.map(p => {
+    const pct = Math.round(p.avg_risk * 100);
+    return `<tr><td>${p.project}</td><td class="risk-val">${p.n_tests}</td><td class="risk-val">${p.n_flaky}</td>
+      <td><div class="risk-cell"><div class="risk-track"><div class="risk-fill" style="width:${pct}%;background:${riskColor(p.avg_risk)}"></div></div><span class="risk-val">${pct}%</span></div></td>
+      <td class="risk-val">${p.n_flagged}</td></tr>`;
+  }).join('');
+}
+document.getElementById('riskSearch').addEventListener('input', e => { riskFilterText = e.target.value; renderProjectsFull(); });
+renderProjectsFull();
+
+/* ---------- Test Intelligence view ---------- */
+const catColors = {
+  "Execution timing": "var(--red)", "Code churn history": "var(--amber)",
+  "Coverage footprint": "var(--accent)", "Test structure": "var(--purple)",
+  "Project-relative (new)": "var(--green)", "Test smells": "var(--muted)"
+};
+const maxImp = Math.max(...DATA.top_importance.map(f => f.mean_abs_shap));
+document.getElementById('importance').innerHTML = DATA.top_importance.map(f => `
+  <div class="bar-row">
+    <div class="bar-label" title="${f.feature}">${f.feature}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${(f.mean_abs_shap/maxImp*100).toFixed(1)}%; background:${catColors[f.category] || 'var(--accent)'}"></div></div>
+    <span class="cat-tag" style="background:${catColors[f.category]}22; color:${catColors[f.category]};">${f.category}</span>
+  </div>
+`).join('');
+
+let sortKey = 'risk_score', sortDir = -1, testFilterText = '';
+function render() {
+  let rows = DATA.tests.filter(t => t.project.toLowerCase().includes(testFilterText.toLowerCase()));
+  rows.sort((a,b) => (a[sortKey] > b[sortKey] ? 1 : -1) * sortDir);
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = rows.map((t, i) => {
+    const pct = Math.round(t.risk_score * 100);
+    const color = riskColor(t.risk_score);
+    const featLines = t.top_features.map(f => {
+      const isPos = f.shap >= 0;
+      const width = Math.min(Math.abs(f.shap) * 400, 48);
+      return `<div class="feat-line">
+        <div class="feat-name">${f.feature}</div>
+        <div class="feat-bar-wrap"><div class="feat-mid"></div><div class="feat-bar ${isPos?'pos':'neg'}" style="width:${width}%"></div></div>
+        <div style="width:56px;text-align:right;color:${isPos ? 'var(--red)' : 'var(--accent)'}">${f.shap>0?'+':''}${f.shap.toFixed(3)}</div>
+      </div>`;
+    }).join('');
+    return `
+      <tr class="row" onclick="toggleDetail(${i})">
+        <td>${t.project}</td>
+        <td><div class="risk-cell"><div class="risk-track"><div class="risk-fill" style="width:${pct}%;background:${color}"></div></div><span class="risk-val">${pct}%</span></div></td>
+        <td><span class="badge"><div class="dot" style="background:${t.flaky?'var(--red)':'var(--green)'}"></div>${t.flaky?'flaky':'clean'}</span></td>
+      </tr>
+      <tr class="detail" id="detail-${i}"><td colspan="3">
+        <div style="font-size:10px;color:var(--dim);margin-bottom:8px;font-family:var(--mono);text-transform:uppercase;">Top contributing features</div>${featLines}
+      </td></tr>`;
+  }).join('');
+}
+function toggleDetail(i) { document.getElementById(`detail-${i}`).classList.toggle('open'); }
+function sortBy(key) { if (sortKey===key) sortDir*=-1; else {sortKey=key; sortDir=-1;} render(); }
+document.getElementById('testSearch').addEventListener('input', e => { testFilterText = e.target.value; render(); });
+render();
+
+/* ---------- Config: live threshold control ---------- */
+const sweep = DATA.threshold_sweep;
+const slider = document.getElementById('thresholdSlider');
+slider.max = sweep.length - 1;
+function updateConfig() {
+  const s = sweep[parseInt(slider.value)];
+  document.getElementById('thresholdValue').textContent = (s.threshold*100).toFixed(0) + '%';
+  document.getElementById('configStats').innerHTML = `
+    <div class="stat"><div class="v">${(s.precision*100).toFixed(1)}%</div><div class="l">Precision</div></div>
+    <div class="stat"><div class="v">${(s.recall*100).toFixed(1)}%</div><div class="l">Recall</div></div>
+    <div class="stat"><div class="v">${(s.f1*100).toFixed(1)}%</div><div class="l">F1</div></div>
+    <div class="stat"><div class="v">${s.tp + s.fp}</div><div class="l">Total flagged</div></div>
+  `;
+  const segs = [
+    { v: s.tp, color: '#2ECC71', label: 'True positive' },
+    { v: s.fn, color: '#FF5F57', label: 'Missed' },
+    { v: s.fp, color: '#FFBD2E', label: 'False alarm' },
+    { v: s.tn, color: '#3A3F4E', label: 'True negative' },
+  ];
+  document.getElementById('configCm').innerHTML = `
+    <svg id="configCmDonut" width="100" height="100" viewBox="0 0 120 120" style="margin-bottom:10px;"></svg>
+    <div class="legend-row">
+      <div class="legend-item"><div class="dot" style="background:#2ECC71"></div>TP ${s.tp}</div>
+      <div class="legend-item"><div class="dot" style="background:#FF5F57"></div>FN ${s.fn}</div>
+      <div class="legend-item"><div class="dot" style="background:#FFBD2E"></div>FP ${s.fp}</div>
+      <div class="legend-item"><div class="dot" style="background:#3A3F4E"></div>TN ${s.tn}</div>
+    </div>
+  `;
+  drawDonut('configCmDonut', s);
+  document.getElementById('configBars').innerHTML = `
+    <div class="bar-row"><div class="bar-label">Precision</div><div class="bar-track"><div class="bar-fill" style="width:${s.precision*100}%;background:var(--accent)"></div></div></div>
+    <div class="bar-row"><div class="bar-label">Recall</div><div class="bar-track"><div class="bar-fill" style="width:${s.recall*100}%;background:var(--purple)"></div></div></div>
+    <div class="bar-row"><div class="bar-label">F1</div><div class="bar-track"><div class="bar-fill" style="width:${s.f1*100}%;background:var(--green)"></div></div></div>
+  `;
+  drawSweepChart(parseInt(slider.value));
+}
+
+function drawSweepChart(currentIdx) {
+  const w = 760, h = 180, pad = 40;
+  const x = i => pad + i * ((w - pad - 15) / (sweep.length - 1));
+  const y = v => (h - 30) - v * (h - 50);
+  function linePath(key) {
+    let p = `M ${x(0)} ${y(sweep[0][key])}`;
+    sweep.forEach((s, i) => { if (i > 0) p += ` L ${x(i)} ${y(s[key])}`; });
+    return p;
+  }
+  const cur = sweep[currentIdx];
+  document.getElementById('sweepChart').innerHTML = `
+    <line x1="${pad}" y1="${h-30}" x2="${w-10}" y2="${h-30}" stroke="#2A2E3A" stroke-width="1"/>
+    <line x1="${pad}" y1="10" x2="${pad}" y2="${h-30}" stroke="#2A2E3A" stroke-width="1"/>
+    <path d="${linePath('precision')}" fill="none" stroke="#5B8DEF" stroke-width="2"/>
+    <path d="${linePath('recall')}" fill="none" stroke="#A78BFA" stroke-width="2"/>
+    <path d="${linePath('f1')}" fill="none" stroke="#2ECC71" stroke-width="2.5"/>
+    <line x1="${x(currentIdx)}" y1="10" x2="${x(currentIdx)}" y2="${h-30}" stroke="#8B8FA3" stroke-width="1" stroke-dasharray="3,3"/>
+    <circle cx="${x(currentIdx)}" cy="${y(cur.f1)}" r="4.5" fill="#2ECC71"/>
+    <text x="${pad}" y="${h-14}" fill="#565B6B" font-size="9.5" font-family="JetBrains Mono">${(sweep[0].threshold*100).toFixed(0)}%</text>
+    <text x="${w-30}" y="${h-14}" fill="#565B6B" font-size="9.5" font-family="JetBrains Mono">${(sweep[sweep.length-1].threshold*100).toFixed(0)}% threshold</text>
+  `;
+}
+slider.addEventListener('input', updateConfig);
+// initialize slider at the closest sweep point to the model's actual chosen threshold
+let closestIdx = 0, closestDiff = 999;
+sweep.forEach((s, i) => { const d = Math.abs(s.threshold - threshold); if (d < closestDiff) { closestDiff = d; closestIdx = i; } });
+slider.value = closestIdx;
+updateConfig();
+
+/* ---------- Reports ---------- */
+document.getElementById('comparisonTbody').innerHTML = DATA.comparison.map(c => `
+  <tr><td>${c.config}</td><td class="risk-val">${c.roc_auc.toFixed(3)}</td><td class="risk-val">${c.pr_auc.toFixed(3)}</td><td class="risk-val">${c.f1.toFixed(3)}</td><td class="risk-val">${c.cost}</td></tr>
+`).join('');
+
+/* ---------- Predict: runs the real Random Forest (300 trees) in-browser ---------- */
+const labels = {
+  "testLength": "Test length (lines)", "numAsserts": "Number of assertions",
+  "numCoveredLines": "Lines covered by this test", "ExecutionTime": "Execution time (s)",
+  "projectSourceLinesCovered": "Project total lines covered", "projectSourceClassesCovered": "Project total classes covered",
+  "num_third_party_libs": "Third-party libraries used", "hIndexModificationsPerCoveredLine_window100": "Recent code churn (last 100 changes)",
+  "assertion-roulette": "Assertion roulette", "conditional-test-logic": "Conditional test logic",
+  "eager-test": "Eager test", "fire-and-forget": "Fire and forget",
+  "indirect-testing": "Indirect testing", "mystery-guest": "Mystery guest",
+  "resource-optimism": "Resource optimism", "test-run-war": "Run war",
+};
+
+let currentValues = {};
+function resetToMedians() {
+  currentValues = {};
+  PRED_UI.raw_numeric.forEach(k => currentValues[k] = PRED_UI.medians[k]);
+  PRED_UI.smell_cols.forEach(k => currentValues[k] = 0);
+}
+resetToMedians();
+
+function buildForm() {
+  document.getElementById('numericInputs').innerHTML = PRED_UI.raw_numeric.map(k => `
+    <div style="margin-bottom:10px;">
+      <label style="font-size:11.5px; color:var(--muted); display:block; margin-bottom:4px;">${labels[k] || k}</label>
+      <input type="number" step="any" id="in_${k}" value="${currentValues[k]}" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-family:var(--mono); font-size:12.5px;">
+    </div>
+  `).join('');
+  document.getElementById('smellInputs').innerHTML = PRED_UI.smell_cols.map(k => `
+    <label style="display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); cursor:pointer;">
+      <input type="checkbox" id="in_${k}" ${currentValues[k] ? 'checked' : ''} style="accent-color:var(--accent);">
+      ${labels[k] || k}
+    </label>
+  `).join('');
+
+  PRED_UI.raw_numeric.forEach(k => {
+    document.getElementById(`in_${k}`).addEventListener('input', e => { currentValues[k] = parseFloat(e.target.value) || 0; predict(); });
+  });
+  PRED_UI.smell_cols.forEach(k => {
+    document.getElementById(`in_${k}`).addEventListener('change', e => { currentValues[k] = e.target.checked ? 1 : 0; predict(); });
+  });
+}
+
+function log1p(x) { return Math.log(1 + Math.max(x, -0.999999)); }
+
+function deriveFeatures(v) {
+  const windowSizes = [5, 10, 25, 50, 75, 100, 500, 10000];
+  const windowKeys = PRED_UI.churn_windows_all;
+  const churnVals = windowKeys.map(k => k === 'hIndexModificationsPerCoveredLine_window100' ? v['hIndexModificationsPerCoveredLine_window100'] : PRED_UI.medians[k]);
+  const churnAvg = churnVals.reduce((a, b) => a + b, 0) / churnVals.length;
+  const w5 = churnVals[0], w10000 = churnVals[7];
+
+  // churn trend slope: linear regression of churn value vs log(window size)
+  const logW = windowSizes.map(w => Math.log(w));
+  const meanLogW = logW.reduce((a, b) => a + b, 0) / logW.length;
+  const meanChurn = churnAvg;
+  let num = 0, den = 0;
+  for (let i = 0; i < logW.length; i++) { num += (logW[i] - meanLogW) * (churnVals[i] - meanChurn); den += (logW[i] - meanLogW) ** 2; }
+  const churnSlope = den === 0 ? 0 : num / den;
+
+  const full = {};
+  PRED_UI.smell_cols.forEach(k => full[k] = v[k]);
+  full['testLength'] = v['testLength'];
+  full['numAsserts'] = v['numAsserts'];
+  full['numCoveredLines'] = v['numCoveredLines'];
+  full['ExecutionTime'] = v['ExecutionTime'];
+  full['projectSourceLinesCovered'] = v['projectSourceLinesCovered'];
+  full['projectSourceClassesCovered'] = v['projectSourceClassesCovered'];
+  windowKeys.forEach((k, i) => full[k] = churnVals[i]);
+  full['num_third_party_libs'] = v['num_third_party_libs'];
+
+  const smellSum = PRED_UI.smell_cols.reduce((a, k) => a + v[k], 0);
+  full['smell_count'] = smellSum;
+  full['has_any_smell'] = smellSum > 0 ? 1 : 0;
+  full['asserts_per_line'] = v['testLength'] > 0 ? v['numAsserts'] / v['testLength'] : 0;
+  full['coverage_ratio'] = v['projectSourceLinesCovered'] > 0 ? v['numCoveredLines'] / v['projectSourceLinesCovered'] : 0;
+  full['testLength_log'] = log1p(v['testLength']);
+  full['numCoveredLines_log'] = log1p(v['numCoveredLines']);
+  full['ExecutionTime_log'] = log1p(v['ExecutionTime']);
+  full['projectSourceLinesCovered_log'] = log1p(v['projectSourceLinesCovered']);
+  full['projectSourceClassesCovered_log'] = log1p(v['projectSourceClassesCovered']);
+  full['num_third_party_libs_log'] = log1p(v['num_third_party_libs']);
+  full['churn_short_to_long_ratio'] = (w5 + 1) / (w10000 + 1);
+  full['churn_avg'] = churnAvg;
+  full['execution_time_percentile_in_project'] = 0.5;
+  full['coverage_percentile_in_project'] = 0.5;
+  full['testlength_percentile_in_project'] = 0.5;
+  full['churn_zscore_in_project'] = 0;
+  full['churn_trend_slope'] = churnSlope;
+  full['execution_time_per_covered_line'] = v['ExecutionTime'] / (v['numCoveredLines'] + 1);
+  full['smell_pair_assertroulette_mystery'] = v['assertion-roulette'] * v['mystery-guest'];
+  full['smell_pair_eager_conditional'] = v['eager-test'] * v['conditional-test-logic'];
+  full['smell_pair_resourceoptimism_indirect'] = v['resource-optimism'] * v['indirect-testing'];
+
+  return PRED_MODEL.feature_names.map(name => full[name]);
+}
+
+function traverseTree(tree, x) {
+  let node = 0;
+  while (tree.left[node] !== -1) {
+    const f = tree.feature[node];
+    node = x[f] <= tree.threshold[node] ? tree.left[node] : tree.right[node];
+  }
+  return tree.prob[node];
+}
+
+function runModel(rawFeatureVector) {
+  const scaled = rawFeatureVector.map((x, i) => (x - PRED_MODEL.scaler_mean[i]) / PRED_MODEL.scaler_scale[i]);
+  const probs = PRED_MODEL.trees.map(t => traverseTree(t, scaled));
+  return probs.reduce((a, b) => a + b, 0) / probs.length;
+}
+
+function predict() {
+  const featureVector = deriveFeatures(currentValues);
+  const risk = runModel(featureVector);
+  const pct = Math.round(risk * 1000) / 10;
+  const isFlagged = risk >= threshold;
+  const color = riskColor(risk);
+  document.getElementById('predictResult').innerHTML = `
+    <svg width="140" height="140" viewBox="0 0 140 140" style="margin: 0 auto;">
+      <circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg)" stroke-width="14"/>
+      <circle cx="70" cy="70" r="58" fill="none" stroke="${color}" stroke-width="14"
+        stroke-dasharray="${2*Math.PI*58*risk} ${2*Math.PI*58}" stroke-dashoffset="0"
+        transform="rotate(-90 70 70)" stroke-linecap="round"/>
+      <text x="70" y="65" text-anchor="middle" fill="var(--text)" font-size="26" font-weight="700" font-family="JetBrains Mono">${pct}%</text>
+      <text x="70" y="85" text-anchor="middle" fill="var(--muted)" font-size="10" font-family="JetBrains Mono">RISK SCORE</text>
+    </svg>
+    <div style="margin-top:16px; font-family: var(--mono); font-size: 13px; color: ${color};">
+      ${isFlagged ? 'FLAGGED as likely flaky' : 'Below threshold (' + (threshold*100).toFixed(0) + '%)'}
+    </div>
+    <div style="margin-top:10px; font-size: 11.5px; color: var(--dim); max-width:260px; margin-left:auto; margin-right:auto;">
+      Computed live using all 300 trees of the trained Random Forest
+    </div>
+  `;
+}
+
+document.getElementById('loadFlaky').addEventListener('click', () => {
+  currentValues = { ...PRED_UI.flaky_example };
+  buildForm(); predict();
+});
+document.getElementById('loadClean').addEventListener('click', () => {
+  currentValues = { ...PRED_UI.clean_example };
+  buildForm(); predict();
+});
+document.getElementById('resetForm').addEventListener('click', () => {
+  resetToMedians(); buildForm(); predict();
+});
+
+buildForm();
+predict();
+
+/* ---------- Batch CSV scoring ---------- */
+const CSV_COLUMNS = ['label', ...PRED_UI.smell_cols, ...PRED_UI.raw_numeric];
+
+function downloadBlob(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('downloadTemplate').addEventListener('click', () => {
+  const exampleRow = CSV_COLUMNS.map(c => c === 'label' ? 'example_test_1' : (PRED_UI.flaky_example[c] !== undefined ? PRED_UI.flaky_example[c] : ''));
+  const csv = CSV_COLUMNS.join(',') + '\n' + exampleRow.join(',');
+  downloadBlob('flakeguard_batch_template.csv', csv, 'text/csv');
+});
+
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+  const headers = lines[0].split(',').map(h => h.trim());
+  const rows = lines.slice(1).map(line => {
+    const cells = line.split(',').map(c => c.trim());
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = cells[i]);
+    return obj;
+  });
+  return { headers, rows };
+}
+
+document.getElementById('csvUpload').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('csvStatus');
+  status.textContent = 'Reading ' + file.name + '...';
+  status.style.color = 'var(--dim)';
+
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try {
+      const { headers, rows } = parseCSV(evt.target.result);
+      const required = [...PRED_UI.smell_cols, ...PRED_UI.raw_numeric];
+      const missing = required.filter(c => !headers.includes(c));
+      if (missing.length > 0) {
+        status.textContent = `Missing columns: ${missing.join(', ')}`;
+        status.style.color = 'var(--red)';
+        return;
+      }
+
+      const results = rows.map((row, i) => {
+        const v = {};
+        PRED_UI.raw_numeric.forEach(k => {
+          const raw = row[k];
+          v[k] = (raw === undefined || raw === '' || isNaN(parseFloat(raw))) ? PRED_UI.medians[k] : parseFloat(raw);
+        });
+        PRED_UI.smell_cols.forEach(k => {
+          const raw = row[k];
+          v[k] = (raw === '1' || raw === 'true' || raw === 'True') ? 1 : 0;
+        });
+        const risk = runModel(deriveFeatures(v));
+        return { label: row.label || `Row ${i + 1}`, risk };
+      });
+      results.sort((a, b) => b.risk - a.risk);
+
+      status.textContent = `Scored ${results.length} tests from ${file.name}`;
+      status.style.color = 'var(--green)';
+      renderBatchResults(results);
+    } catch (err) {
+      status.textContent = 'Could not parse file: ' + err.message;
+      status.style.color = 'var(--red)';
+    }
+  };
+  reader.readAsText(file);
+});
+
+let lastBatchResults = [];
+function renderBatchResults(results) {
+  lastBatchResults = results;
+  const flaggedCount = results.filter(r => r.risk >= threshold).length;
+  document.getElementById('batchSummary').textContent = `${flaggedCount} of ${results.length} tests flagged at the ${(threshold*100).toFixed(0)}% threshold`;
+  document.getElementById('batchTbody').innerHTML = results.map(r => {
+    const pct = Math.round(r.risk * 1000) / 10;
+    const isFlagged = r.risk >= threshold;
+    return `<tr><td>${r.label}</td>
+      <td><div class="risk-cell"><div class="risk-track"><div class="risk-fill" style="width:${pct}%;background:${riskColor(r.risk)}"></div></div><span class="risk-val">${pct}%</span></div></td>
+      <td><span class="badge"><div class="dot" style="background:${isFlagged?'var(--red)':'var(--green)'}"></div>${isFlagged?'flagged':'clear'}</span></td></tr>`;
+  }).join('');
+  document.getElementById('batchResultsWrap').style.display = 'block';
+}
+
+document.getElementById('downloadResults').addEventListener('click', () => {
+  const csv = 'label,risk_score,flagged\n' + lastBatchResults.map(r => `${r.label},${(r.risk*100).toFixed(1)}%,${r.risk >= threshold ? 'yes' : 'no'}`).join('\n');
+  downloadBlob('flakeguard_batch_results.csv', csv, 'text/csv');
+});
+
+</script>
+</body>
+</html>

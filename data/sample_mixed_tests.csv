@@ -1,0 +1,11 @@
+label,assertion-roulette,conditional-test-logic,eager-test,fire-and-forget,indirect-testing,mystery-guest,resource-optimism,test-run-war,testLength,numAsserts,numCoveredLines,ExecutionTime,projectSourceLinesCovered,projectSourceClassesCovered,num_third_party_libs,hIndexModificationsPerCoveredLine_window100
+okhttp_test_54,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,6.0,1.0,5.0,0.028,6.0,1.0,0.0,2.0
+spring-boot_test_71,1.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,9.0,3.0,5.0,0.862,8.0,1.0,4.0,0.0
+ambari_test_113,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,46.0,8.0,61.0,3.086,181.0,76.0,14.0,3.0
+alluxio_test_161,1.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,17.0,2.0,43.0,2.186,878.0,202.0,14.0,3.0
+alluxio_test_175,1.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,18.0,4.0,60.0,1.283,446.0,160.0,30.0,3.0
+spring-boot_test_3000,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,8.0,2.0,15.0,0.161,93.0,35.0,0.0,0.0
+incubator-dubbo_test_8000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,3.0,0.0,5.0,0.0,18.0,14.0,0.0,0.0
+incubator-dubbo_test_12000,1.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,19.0,14.0,17.0,0.022,19.0,2.0,14.0,0.0
+incubator-dubbo_test_16000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,3.0,0.0,0.0,0.027,3.0,2.0,0.0,1.0
+ambari_test_20000,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,42.0,6.0,10.0,2.457,13.0,2.0,2.0,1.0

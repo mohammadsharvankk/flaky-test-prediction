@@ -1,0 +1,5 @@
+numpy>=1.26
+pandas>=2.1
+scikit-learn==1.9.0   # pinned: models/final_model_v3.pkl was saved with this version
+xgboost>=2.0
+shap>=0.45

@@ -1,0 +1,21 @@
+# Checks the main finding still reproduces on a clean machine.
+name: Smoke test
+
+on:
+  push:
+    branches: [main]
+    paths: ["src/**", "data/**", "requirements.txt"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  split-comparison:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python src/split_comparison.py
